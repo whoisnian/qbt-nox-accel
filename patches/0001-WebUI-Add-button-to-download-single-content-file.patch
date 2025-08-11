@@ -1,0 +1,216 @@
+From c20baa01f33df84400cbc4b0d1e68ac518904eb3 Mon Sep 17 00:00:00 2001
+From: whoisnian <zhuchangbao1998@gmail.com>
+Date: Wed, 13 Aug 2025 03:16:17 +0800
+Subject: [PATCH] WebUI: Add button to download single content file
+
+---
+ src/webui/api/apicontroller.cpp             |  6 ++++
+ src/webui/api/apicontroller.h               |  3 ++
+ src/webui/api/torrentscontroller.cpp        | 38 +++++++++++++++++++++
+ src/webui/api/torrentscontroller.h          |  1 +
+ src/webui/webapplication.cpp                |  3 ++
+ src/webui/www/private/index.html            |  1 +
+ src/webui/www/private/scripts/prop-files.js | 28 +++++++++++++++
+ src/webui/www/translations/webui_zh_CN.ts   |  4 +++
+ 8 files changed, 84 insertions(+)
+
+diff --git a/src/webui/api/apicontroller.cpp b/src/webui/api/apicontroller.cpp
+index ca2c318f4..0d58ff0a2 100644
+--- a/src/webui/api/apicontroller.cpp
++++ b/src/webui/api/apicontroller.cpp
+@@ -42,6 +42,7 @@ void APIResult::clear()
+     data.clear();
+     mimeType.clear();
+     filename.clear();
++    headers.clear();
+ }
+ 
+ APIController::APIController(IApplication *app, QObject *parent)
+@@ -105,3 +106,8 @@ void APIController::setResult(const QByteArray &result, const QString &mimeType,
+     m_result.mimeType = mimeType;
+     m_result.filename = filename;
+ }
++
++void APIController::setHeader(const QString &name, const QString &value)
++{
++    m_result.headers[name] = value;
++}
+diff --git a/src/webui/api/apicontroller.h b/src/webui/api/apicontroller.h
+index edcfc16fc..030f29407 100644
+--- a/src/webui/api/apicontroller.h
++++ b/src/webui/api/apicontroller.h
+@@ -43,6 +43,7 @@ struct APIResult
+     QVariant data;
+     QString mimeType;
+     QString filename;
++    QMap<QString, QString> headers;
+ 
+     void clear();
+ };
+@@ -67,6 +68,8 @@ protected:
+     void setResult(const QJsonObject &result);
+     void setResult(const QByteArray &result, const QString &mimeType = {}, const QString &filename = {});
+ 
++    void setHeader(const QString &name, const QString &value);
++
+ private:
+     StringMap m_params;
+     DataMap m_data;
+diff --git a/src/webui/api/torrentscontroller.cpp b/src/webui/api/torrentscontroller.cpp
+index 39e536867..fd606f460 100644
+--- a/src/webui/api/torrentscontroller.cpp
++++ b/src/webui/api/torrentscontroller.cpp
+@@ -53,6 +53,7 @@
+ #include "base/interfaces/iapplication.h"
+ #include "base/global.h"
+ #include "base/logger.h"
++#include "base/path.h"
+ #include "base/torrentfilter.h"
+ #include "base/utils/datetime.h"
+ #include "base/utils/fs.h"
+@@ -1628,6 +1629,43 @@ void TorrentsController::exportAction()
+     setResult(result.value(), u"application/x-bittorrent"_s, (id.toString() + u".torrent"));
+ }
+ 
++void TorrentsController::downloadContentFileAction()
++{
++    requireParams({u"hash"_s, u"path"_s});
++
++    const auto id = BitTorrent::TorrentID::fromString(params()[u"hash"_s]);
++    const BitTorrent::Torrent *const torrent = BitTorrent::Session::instance()->getTorrent(id);
++    if (!torrent)
++        throw APIError(APIErrorType::NotFound);
++    if (!torrent->isCompleted())
++        throw APIError(APIErrorType::Conflict, tr("Torrent is not completed yet"));
++
++    const Path contentFilePath {params()[u"path"_s]};
++    if (contentFilePath.isEmpty())
++        throw APIError(APIErrorType::BadParams, tr("Params path cannot be empty"));
++
++    int fileIndex = -1;
++    for (int i = 0; i < torrent->filesCount(); ++i)
++    {
++        if ((fileIndex < 0) && (torrent->filePath(i) == contentFilePath))
++            fileIndex = i;
++    }
++    if (fileIndex < 0)
++        throw APIError(APIErrorType::NotFound, tr("Content file not found in torrent"));
++
++    const Path fullPath = torrent->savePath() / torrent->filePath(fileIndex);
++    LogMsg(tr("WebUI requests to download content file: \"%1\"").arg(fullPath.toString()));
++    if (fullPath.isEmpty())
++        throw APIError(APIErrorType::NotFound, tr("Content file path cannot be empty"));
++    if (!Utils::Fs::isReadable(fullPath))
++        throw APIError(APIErrorType::AccessDenied, tr("Content file path is not readable"));
++    if (Utils::Fs::isDir(fullPath))
++        throw APIError(APIErrorType::Conflict, tr("Content file path is a directory"));
++
++    setHeader(u"X-Accel-Redirect"_s, QUrl(fullPath.toString()).toString(QUrl::FullyEncoded));
++    setResult(QString());
++}
++
+ void TorrentsController::SSLParametersAction()
+ {
+     requireParams({u"hash"_s});
+diff --git a/src/webui/api/torrentscontroller.h b/src/webui/api/torrentscontroller.h
+index a233048ac..75f538d73 100644
+--- a/src/webui/api/torrentscontroller.h
++++ b/src/webui/api/torrentscontroller.h
+@@ -93,6 +93,7 @@ private slots:
+     void renameFileAction();
+     void renameFolderAction();
+     void exportAction();
++    void downloadContentFileAction();
+     void SSLParametersAction();
+     void setSSLParametersAction();
+ };
+diff --git a/src/webui/webapplication.cpp b/src/webui/webapplication.cpp
+index 74f582f4a..bc249a99c 100644
+--- a/src/webui/webapplication.cpp
++++ b/src/webui/webapplication.cpp
+@@ -379,6 +379,9 @@ void WebApplication::doProcessRequest()
+             print(result.data.toString(), Http::CONTENT_TYPE_TXT);
+             break;
+         }
++        if (!result.headers.isEmpty())
++            for (const auto [key, value] : result.headers.asKeyValueRange())
++                setHeader({key, value});
+     }
+     catch (const APIError &error)
+     {
+diff --git a/src/webui/www/private/index.html b/src/webui/www/private/index.html
+index f201d0efb..1e8a7bdee 100644
+--- a/src/webui/www/private/index.html
++++ b/src/webui/www/private/index.html
+@@ -260,6 +260,7 @@
+     </ul>
+     <ul id="torrentFilesMenu" class="contextMenu">
+         <li><a href="#Rename"><img src="images/edit-rename.svg" alt="QBT_TR(Rename...)QBT_TR[CONTEXT=PropertiesWidget]"> QBT_TR(Rename...)QBT_TR[CONTEXT=PropertiesWidget]</a></li>
++        <li><a href="#DownloadContentFile"><img src="images/download.svg" alt="QBT_TR(Download...)QBT_TR[CONTEXT=PropertiesWidget]"> QBT_TR(Download...)QBT_TR[CONTEXT=PropertiesWidget]</a></li>
+         <li class="separator">
+             <a href="#FilePrio" class="arrow-right"><span style="display: inline-block; width: 16px;"></span> QBT_TR(Priority)QBT_TR[CONTEXT=PropertiesWidget]</a>
+             <ul>
+diff --git a/src/webui/www/private/scripts/prop-files.js b/src/webui/www/private/scripts/prop-files.js
+index 39c9db083..609c9448d 100644
+--- a/src/webui/www/private/scripts/prop-files.js
++++ b/src/webui/www/private/scripts/prop-files.js
+@@ -574,6 +574,26 @@ window.qBittorrent.PropFiles ??= (() => {
+         });
+     };
+ 
++    const singleContentFileDownload = (hash) => {
++        const rowId = torrentFilesTable.selectedRowsIds()[0];
++        if (rowId === undefined)
++            return;
++        const row = torrentFilesTable.rows.get(rowId);
++        if (!row)
++            return;
++
++        const node = torrentFilesTable.getNode(rowId);
++        const path = node.path;
++
++        const url = new URL("api/v2/torrents/downloadContentFile", window.location);
++        url.search = new URLSearchParams({ hash, path });
++        const link = document.createElement("a");
++        link.href = url.toString();
++        link.download = node.name;
++        link.click();
++        link.remove();
++    };
++
+     const torrentFilesContextMenu = new window.qBittorrent.ContextMenu.ContextMenu({
+         targets: "#torrentFilesTableDiv tbody tr",
+         menu: "torrentFilesMenu",
+@@ -588,6 +608,14 @@ window.qBittorrent.PropFiles ??= (() => {
+                 else
+                     singleFileRename(hash);
+             },
++            DownloadContentFile: (element, ref) => {
++                const hash = torrentsTable.getCurrentTorrentID();
++                if (!hash)
++                    return;
++
++                if (torrentFilesTable.selectedRowsIds().length == 1)
++                    singleContentFileDownload(hash);
++            },
+ 
+             FilePrioIgnore: (element, ref) => {
+                 filesPriorityMenuClicked(FilePriority.Ignored);
+diff --git a/src/webui/www/translations/webui_zh_CN.ts b/src/webui/www/translations/webui_zh_CN.ts
+index 60a8feac7..ba14306fa 100644
+--- a/src/webui/www/translations/webui_zh_CN.ts
++++ b/src/webui/www/translations/webui_zh_CN.ts
+@@ -2327,6 +2327,10 @@ Use ';' to split multiple entries. Can use wildcard '*'.</source>
+         <source>Rename...</source>
+         <translation>重命名...</translation>
+     </message>
++    <message>
++        <source>Download...</source>
++        <translation>下载</translation>
++    </message>
+     <message>
+         <source>%1 (seeded for %2)</source>
+         <translation>%1 (已做种 %2)</translation>
+-- 
+2.50.1
+
