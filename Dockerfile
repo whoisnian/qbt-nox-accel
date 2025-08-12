@@ -47,6 +47,7 @@ RUN \
     g++ \
     make \
     ninja \
+    patch \
     openssl-dev \
     qt6-qtbase-dev \
     qt6-qtbase-private-dev \
@@ -93,6 +94,7 @@ RUN \
   cmake --install build
 
 # build qbittorrent
+COPY patches /patches
 RUN \
   if [ "${QBT_VERSION}" = "devel" ]; then \
     git clone \
@@ -105,6 +107,7 @@ RUN \
     tar -xf "release-${QBT_VERSION}.tar.gz" && \
     cd "qBittorrent-release-${QBT_VERSION}" ; \
   fi && \
+  for i in /patches/*.patch; do patch -p1 < "$i"; done && \
   cmake \
     -B build \
     -G Ninja \
