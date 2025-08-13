@@ -1,7 +1,7 @@
 From c20baa01f33df84400cbc4b0d1e68ac518904eb3 Mon Sep 17 00:00:00 2001
 From: whoisnian <zhuchangbao1998@gmail.com>
 Date: Wed, 13 Aug 2025 03:16:17 +0800
-Subject: [PATCH] WebUI: Add button to download single content file
+Subject: [PATCH 1/2] WebUI: Add button to download single content file
 
 ---
  src/webui/api/apicontroller.cpp             |  6 ++++

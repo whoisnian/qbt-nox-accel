@@ -1,0 +1,84 @@
+From 9aa68117e309b56082958af03cb4eeb40b26cbf0 Mon Sep 17 00:00:00 2001
+From: whoisnian <zhuchangbao1998@gmail.com>
+Date: Thu, 14 Aug 2025 03:16:57 +0800
+Subject: [PATCH 2/2] WebUI: Add command line option --webui-addr
+
+---
+ src/app/application.cpp |  3 +++
+ src/app/cmdoptions.cpp  | 12 ++++++++++++
+ src/app/cmdoptions.h    |  1 +
+ 3 files changed, 16 insertions(+)
+
+diff --git a/src/app/application.cpp b/src/app/application.cpp
+index cfb0dbd18..ec4b1c248 100644
+--- a/src/app/application.cpp
++++ b/src/app/application.cpp
+@@ -328,6 +328,9 @@ Application::Application(int &argc, char **argv)
+     if (isFileLoggerEnabled())
+         m_fileLogger = new FileLogger(fileLoggerPath(), isFileLoggerBackup(), fileLoggerMaxSize(), isFileLoggerDeleteOld(), fileLoggerAge(), static_cast<FileLogger::FileLogAgeType>(fileLoggerAgeType()));
+ 
++    if (!m_commandLineArgs.webUIAddr.isEmpty())
++        Preferences::instance()->setWebUIAddress(m_commandLineArgs.webUIAddr);
++
+     if (m_commandLineArgs.webUIPort > 0) // it will be -1 when user did not set any value
+         Preferences::instance()->setWebUIPort(m_commandLineArgs.webUIPort);
+ 
+diff --git a/src/app/cmdoptions.cpp b/src/app/cmdoptions.cpp
+index 3cbf53e37..f5cae20e9 100644
+--- a/src/app/cmdoptions.cpp
++++ b/src/app/cmdoptions.cpp
+@@ -314,6 +314,7 @@ namespace
+ #else
+     constexpr const BoolOption NO_SPLASH_OPTION {u"no-splash"};
+ #endif
++    constexpr const StringOption WEBUI_ADDR_OPTION {u"webui-addr"};
+     constexpr const IntOption WEBUI_PORT_OPTION {u"webui-port"};
+     constexpr const IntOption TORRENTING_PORT_OPTION {u"torrenting-port"};
+     constexpr const StringOption PROFILE_OPTION {u"profile"};
+@@ -336,6 +337,7 @@ QBtCommandLineParameters::QBtCommandLineParameters(const QProcessEnvironment &en
+ #elif !defined(Q_OS_WIN)
+     , shouldDaemonize(DAEMON_OPTION.value(env))
+ #endif
++    , webUIAddr(WEBUI_ADDR_OPTION.value(env))
+     , webUIPort(WEBUI_PORT_OPTION.value(env, -1))
+     , torrentingPort(TORRENTING_PORT_OPTION.value(env, -1))
+     , skipDialog(SKIP_DIALOG_OPTION.value(env))
+@@ -376,6 +378,13 @@ QBtCommandLineParameters parseCommandLine(const QStringList &args)
+             {
+                 result.confirmLegalNotice = true;
+             }
++            else if (arg == WEBUI_ADDR_OPTION)
++            {
++                result.webUIAddr = WEBUI_ADDR_OPTION.value(arg);
++                if (result.webUIAddr.isEmpty())
++                    throw CommandLineParameterError(QCoreApplication::translate("CMD Options", "%1 must specify a valid address.")
++                                                    .arg(u"--webui-addr"_s));
++            }
+             else if (arg == WEBUI_PORT_OPTION)
+             {
+                 result.webUIPort = WEBUI_PORT_OPTION.value(arg);
+@@ -506,6 +515,9 @@ QString makeUsage(const QString &prgName)
+         + SHOW_VERSION_OPTION.usage() + wrapText(QCoreApplication::translate("CMD Options", "Display program version and exit")) + u'\n'
+ #endif
+         + CONFIRM_LEGAL_NOTICE.usage() + wrapText(QCoreApplication::translate("CMD Options", "Confirm the legal notice")) + u'\n'
++        + WEBUI_ADDR_OPTION.usage(QCoreApplication::translate("CMD Options", "address"))
++        + wrapText(QCoreApplication::translate("CMD Options", "Change the WebUI listen address"))
++        + u'\n'
+         + WEBUI_PORT_OPTION.usage(QCoreApplication::translate("CMD Options", "port"))
+         + wrapText(QCoreApplication::translate("CMD Options", "Change the WebUI port"))
+         + u'\n'
+diff --git a/src/app/cmdoptions.h b/src/app/cmdoptions.h
+index c4b42053f..ed0681e64 100644
+--- a/src/app/cmdoptions.h
++++ b/src/app/cmdoptions.h
+@@ -54,6 +54,7 @@ struct QBtCommandLineParameters
+ #elif !defined(Q_OS_WIN)
+     bool shouldDaemonize = false;
+ #endif
++    QString webUIAddr;
+     int webUIPort = -1;
+     int torrentingPort = -1;
+     std::optional<bool> skipDialog;
+-- 
+2.50.1
+

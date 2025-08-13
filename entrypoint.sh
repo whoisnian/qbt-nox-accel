@@ -62,6 +62,11 @@ if [ -n "$QBT_TORRENTING_PORT" ]; then
     argTorrentingPort="--torrenting-port=$QBT_TORRENTING_PORT"
 fi
 
+argWebUIAddr=""
+if [ -n "$QBT_WEBUI_ADDR" ]; then
+    argWebUIAddr="--webui-addr=$QBT_WEBUI_ADDR"
+fi
+
 argWebUIPort=""
 if [ -n "$QBT_WEBUI_PORT" ]; then
     argWebUIPort="--webui-port=$QBT_WEBUI_PORT"
@@ -90,6 +95,7 @@ if [ "$isRoot" = "1" ]; then
                 "$argLegalNotice" \
                 --profile="$profilePath" \
                 "$argTorrentingPort" \
+                "$argWebUIAddr" \
                 "$argWebUIPort" \
                 "$@"
 else
@@ -98,6 +104,7 @@ else
             "$argLegalNotice" \
             --profile="$profilePath" \
             "$argTorrentingPort" \
+            "$argWebUIAddr" \
             "$argWebUIPort" \
             "$@"
 fi
