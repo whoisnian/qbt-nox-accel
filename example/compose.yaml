@@ -1,0 +1,41 @@
+name: qbittorrent
+
+services:
+  app:
+    image: ghcr.io/whoisnian/qbt-nox-accel:v5.1.2-2
+    restart: always
+    network_mode: host
+    read_only: true
+    stop_grace_period: 1800s
+    tmpfs:
+      - /tmp
+    volumes:
+      - config:/config
+      - downloads:/downloads
+    environment:
+      - QBT_LEGAL_NOTICE=confirm
+      - QBT_WEBUI_ADDR=127.0.0.1
+      - QBT_WEBUI_PORT=18080
+  nginx:
+    image: docker.io/library/nginx:1.29.0-alpine
+    restart: always
+    network_mode: host
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - downloads:/downloads:ro
+    depends_on:
+      - app
+
+volumes:
+  config:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./config
+  downloads:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./downloads
