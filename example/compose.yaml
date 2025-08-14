@@ -17,7 +17,7 @@ services:
       - QBT_WEBUI_ADDR=127.0.0.1
       - QBT_WEBUI_PORT=18080
   nginx:
-    image: docker.io/library/nginx:1.29.0-alpine
+    image: docker.io/library/nginx:1.29.1-alpine
     restart: always
     network_mode: host
     volumes:
