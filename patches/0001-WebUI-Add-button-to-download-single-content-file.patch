@@ -1,4 +1,4 @@
-From c20baa01f33df84400cbc4b0d1e68ac518904eb3 Mon Sep 17 00:00:00 2001
+From f8d6d1751e4b277058a182f380b1fd839490afc6 Mon Sep 17 00:00:00 2001
 From: whoisnian <zhuchangbao1998@gmail.com>
 Date: Wed, 13 Aug 2025 03:16:17 +0800
 Subject: [PATCH 1/2] WebUI: Add button to download single content file
@@ -57,7 +57,7 @@ index edcfc16fc..030f29407 100644
      StringMap m_params;
      DataMap m_data;
 diff --git a/src/webui/api/torrentscontroller.cpp b/src/webui/api/torrentscontroller.cpp
-index 39e536867..fd606f460 100644
+index 39e536867..fd3b0269a 100644
 --- a/src/webui/api/torrentscontroller.cpp
 +++ b/src/webui/api/torrentscontroller.cpp
 @@ -53,6 +53,7 @@
@@ -106,7 +106,7 @@ index 39e536867..fd606f460 100644
 +        throw APIError(APIErrorType::Conflict, tr("Content file path is a directory"));
 +
 +    setHeader(u"X-Accel-Redirect"_s, QUrl(fullPath.toString()).toString(QUrl::FullyEncoded));
-+    setResult(QString());
++    setResult(QByteArray(), u"application/octet-stream"_s, QUrl(fullPath.filename()).toString(QUrl::FullyEncoded));
 +}
 +
  void TorrentsController::SSLParametersAction()
