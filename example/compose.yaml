@@ -2,7 +2,7 @@ name: qbittorrent
 
 services:
   app:
-    image: ghcr.io/whoisnian/qbt-nox-accel:v5.1.2-2
+    image: ghcr.io/whoisnian/qbt-nox-accel:v5.1.2-3
     restart: always
     network_mode: host
     read_only: true
