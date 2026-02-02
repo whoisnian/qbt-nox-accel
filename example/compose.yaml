@@ -2,7 +2,7 @@ name: qbittorrent
 
 services:
   app:
-    image: ghcr.io/whoisnian/qbt-nox-accel:v5.1.2-3
+    image: ghcr.io/whoisnian/qbt-nox-accel:v5.1.4-1
     restart: always
     network_mode: host
     read_only: true
@@ -17,7 +17,7 @@ services:
       - QBT_WEBUI_ADDR=127.0.0.1
       - QBT_WEBUI_PORT=18080
   nginx:
-    image: docker.io/library/nginx:1.29.1-alpine
+    image: docker.io/library/nginx:1.29.4-alpine
     restart: always
     network_mode: host
     volumes:
