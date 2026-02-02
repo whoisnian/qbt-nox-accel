@@ -1,4 +1,4 @@
-From 5bbdd6d86bd702559b83a8ca77956397b821085e Mon Sep 17 00:00:00 2001
+From 896d8ef38ac842291d611ac1c724fca2d31eea8b Mon Sep 17 00:00:00 2001
 From: whoisnian <zhuchangbao1998@gmail.com>
 Date: Thu, 14 Aug 2025 03:16:57 +0800
 Subject: [PATCH 2/2] WebUI: Add command line option --webui-addr
@@ -24,10 +24,10 @@ index cfb0dbd18..ec4b1c248 100644
          Preferences::instance()->setWebUIPort(m_commandLineArgs.webUIPort);
  
 diff --git a/src/app/cmdoptions.cpp b/src/app/cmdoptions.cpp
-index 3cbf53e37..f5cae20e9 100644
+index c4159329b..c2fb11a85 100644
 --- a/src/app/cmdoptions.cpp
 +++ b/src/app/cmdoptions.cpp
-@@ -314,6 +314,7 @@ namespace
+@@ -316,6 +316,7 @@ namespace
  #else
      constexpr const BoolOption NO_SPLASH_OPTION {u"no-splash"};
  #endif
@@ -35,7 +35,7 @@ index 3cbf53e37..f5cae20e9 100644
      constexpr const IntOption WEBUI_PORT_OPTION {u"webui-port"};
      constexpr const IntOption TORRENTING_PORT_OPTION {u"torrenting-port"};
      constexpr const StringOption PROFILE_OPTION {u"profile"};
-@@ -336,6 +337,7 @@ QBtCommandLineParameters::QBtCommandLineParameters(const QProcessEnvironment &en
+@@ -338,6 +339,7 @@ QBtCommandLineParameters::QBtCommandLineParameters(const QProcessEnvironment &en
  #elif !defined(Q_OS_WIN)
      , shouldDaemonize(DAEMON_OPTION.value(env))
  #endif
@@ -43,7 +43,7 @@ index 3cbf53e37..f5cae20e9 100644
      , webUIPort(WEBUI_PORT_OPTION.value(env, -1))
      , torrentingPort(TORRENTING_PORT_OPTION.value(env, -1))
      , skipDialog(SKIP_DIALOG_OPTION.value(env))
-@@ -376,6 +378,13 @@ QBtCommandLineParameters parseCommandLine(const QStringList &args)
+@@ -378,6 +380,13 @@ QBtCommandLineParameters parseCommandLine(const QStringList &args)
              {
                  result.confirmLegalNotice = true;
              }
@@ -57,7 +57,7 @@ index 3cbf53e37..f5cae20e9 100644
              else if (arg == WEBUI_PORT_OPTION)
              {
                  result.webUIPort = WEBUI_PORT_OPTION.value(arg);
-@@ -506,6 +515,9 @@ QString makeUsage(const QString &prgName)
+@@ -508,6 +517,9 @@ QString makeUsage(const QString &prgName)
          + SHOW_VERSION_OPTION.usage() + wrapText(QCoreApplication::translate("CMD Options", "Display program version and exit")) + u'\n'
  #endif
          + CONFIRM_LEGAL_NOTICE.usage() + wrapText(QCoreApplication::translate("CMD Options", "Confirm the legal notice")) + u'\n'
@@ -80,5 +80,5 @@ index c4b42053f..ed0681e64 100644
      int torrentingPort = -1;
      std::optional<bool> skipDialog;
 -- 
-2.50.1
+2.52.0
 
