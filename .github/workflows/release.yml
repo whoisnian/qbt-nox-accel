@@ -6,10 +6,12 @@ on:
 
 jobs:
   build-images:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner.label }}
     strategy:
       matrix:
-        arch: [amd64, arm64]
+        runner:
+          - { arch: amd64, label: ubuntu-24.04 }
+          - { arch: arm64, label: ubuntu-24.04-arm }
     outputs:
       amd64_tag: ${{ steps.save.outputs.amd64_tag }}
       arm64_tag: ${{ steps.save.outputs.arm64_tag }}
@@ -31,7 +33,7 @@ jobs:
         id: meta
         with:
           images: ghcr.io/${{ github.repository }}
-          tags: type=ref,event=tag,suffix=-${{ matrix.arch }}
+          tags: type=ref,event=tag,suffix=-${{ matrix.runner.arch }}
           flavor: latest=false
 
       - name: Extract qBittorrent version from tag
@@ -45,7 +47,7 @@ jobs:
           file: ./Dockerfile
           push: true
           provenance: false
-          platforms: linux/${{ matrix.arch }}
+          platforms: linux/${{ matrix.runner.arch }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
@@ -53,10 +55,10 @@ jobs:
 
       - name: Save image tag
         id: save
-        run: echo "${{ matrix.arch }}_tag=${{ fromJSON(steps.meta.outputs.json).tags[0] }}" >> "$GITHUB_OUTPUT"
+        run: echo "${{ matrix.runner.arch }}_tag=${{ fromJSON(steps.meta.outputs.json).tags[0] }}" >> "$GITHUB_OUTPUT"
 
   merge-images:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - build-images
     steps:
