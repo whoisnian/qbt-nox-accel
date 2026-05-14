@@ -1,34 +1,35 @@
-From ac9ae6f7855c7694f60076f6fddef4b3f1b9bbaa Mon Sep 17 00:00:00 2001
+From 62917dd54e3a0b1f0de3a37ffdfb4a5a23d0e320 Mon Sep 17 00:00:00 2001
 From: whoisnian <zhuchangbao1998@gmail.com>
-Date: Wed, 13 Aug 2025 03:16:17 +0800
-Subject: [PATCH 1/2] WebUI: Add button to download single content file
+Date: Fri, 15 May 2026 01:28:13 +0800
+Subject: [PATCH 1/2] WebUI: Add button to download content file
 
 ---
- src/webui/api/apicontroller.cpp             |  6 ++++
- src/webui/api/apicontroller.h               |  3 ++
- src/webui/api/torrentscontroller.cpp        | 38 +++++++++++++++++++++
- src/webui/api/torrentscontroller.h          |  1 +
- src/webui/webapplication.cpp                |  3 ++
- src/webui/www/private/index.html            |  1 +
- src/webui/www/private/scripts/prop-files.js | 28 +++++++++++++++
- src/webui/www/translations/webui_zh_CN.ts   |  4 +++
- 8 files changed, 84 insertions(+)
+ src/webui/api/apicontroller.cpp               |  6 +++
+ src/webui/api/apicontroller.h                 |  3 ++
+ src/webui/api/torrentscontroller.cpp          | 38 +++++++++++++++++++
+ src/webui/api/torrentscontroller.h            |  1 +
+ src/webui/webapplication.cpp                  |  3 ++
+ src/webui/www/private/index.html              |  1 +
+ src/webui/www/private/scripts/prop-files.js   | 22 ++++++++++-
+ .../www/private/scripts/torrent-content.js    |  8 +++-
+ src/webui/www/translations/webui_zh_CN.ts     |  4 ++
+ 9 files changed, 84 insertions(+), 2 deletions(-)
 
 diff --git a/src/webui/api/apicontroller.cpp b/src/webui/api/apicontroller.cpp
-index ca2c318f4..0d58ff0a2 100644
+index c3382f705..1fc53cd0c 100644
 --- a/src/webui/api/apicontroller.cpp
 +++ b/src/webui/api/apicontroller.cpp
-@@ -42,6 +42,7 @@ void APIResult::clear()
+@@ -43,6 +43,7 @@ void APIResult::clear()
      data.clear();
      mimeType.clear();
      filename.clear();
 +    headers.clear();
+     status = APIStatus::Ok;
  }
  
- APIController::APIController(IApplication *app, QObject *parent)
-@@ -105,3 +106,8 @@ void APIController::setResult(const QByteArray &result, const QString &mimeType,
-     m_result.mimeType = mimeType;
-     m_result.filename = filename;
+@@ -115,3 +116,8 @@ void APIController::setStatus(const APIStatus status)
+ {
+     m_result.status = status;
  }
 +
 +void APIController::setHeader(const QString &name, const QString &value)
@@ -36,39 +37,39 @@ index ca2c318f4..0d58ff0a2 100644
 +    m_result.headers[name] = value;
 +}
 diff --git a/src/webui/api/apicontroller.h b/src/webui/api/apicontroller.h
-index edcfc16fc..030f29407 100644
+index 898ad3fdc..8ae20dc4e 100644
 --- a/src/webui/api/apicontroller.h
 +++ b/src/webui/api/apicontroller.h
-@@ -43,6 +43,7 @@ struct APIResult
+@@ -44,6 +44,7 @@ struct APIResult
      QVariant data;
      QString mimeType;
      QString filename;
 +    QMap<QString, QString> headers;
+     APIStatus status = APIStatus::Ok;
  
      void clear();
- };
-@@ -67,6 +68,8 @@ protected:
+@@ -69,6 +70,8 @@ protected:
      void setResult(const QJsonObject &result);
      void setResult(const QByteArray &result, const QString &mimeType = {}, const QString &filename = {});
  
 +    void setHeader(const QString &name, const QString &value);
 +
+     void setStatus(APIStatus status);
+ 
  private:
-     StringMap m_params;
-     DataMap m_data;
 diff --git a/src/webui/api/torrentscontroller.cpp b/src/webui/api/torrentscontroller.cpp
-index 39e536867..fd3b0269a 100644
+index 5a529eb66..970ceaace 100644
 --- a/src/webui/api/torrentscontroller.cpp
 +++ b/src/webui/api/torrentscontroller.cpp
-@@ -53,6 +53,7 @@
- #include "base/interfaces/iapplication.h"
+@@ -57,6 +57,7 @@
  #include "base/global.h"
  #include "base/logger.h"
+ #include "base/net/downloadmanager.h"
 +#include "base/path.h"
- #include "base/torrentfilter.h"
- #include "base/utils/datetime.h"
- #include "base/utils/fs.h"
-@@ -1628,6 +1629,43 @@ void TorrentsController::exportAction()
+ #include "base/preferences.h"
+ #include "base/search/searchdownloadhandler.h"
+ #include "base/search/searchpluginmanager.h"
+@@ -2122,6 +2123,43 @@ void TorrentsController::exportAction()
      setResult(result.value(), u"application/x-bittorrent"_s, (id.toString() + u".torrent"));
  }
  
@@ -113,24 +114,24 @@ index 39e536867..fd3b0269a 100644
  {
      requireParams({u"hash"_s});
 diff --git a/src/webui/api/torrentscontroller.h b/src/webui/api/torrentscontroller.h
-index a233048ac..75f538d73 100644
+index d3ef62a9d..01f46ddf3 100644
 --- a/src/webui/api/torrentscontroller.h
 +++ b/src/webui/api/torrentscontroller.h
-@@ -93,6 +93,7 @@ private slots:
+@@ -113,6 +113,7 @@ private slots:
      void renameFileAction();
      void renameFolderAction();
      void exportAction();
 +    void downloadContentFileAction();
      void SSLParametersAction();
      void setSSLParametersAction();
- };
+     void fetchMetadataAction();
 diff --git a/src/webui/webapplication.cpp b/src/webui/webapplication.cpp
-index 74f582f4a..bc249a99c 100644
+index 3eacee634..5eb780894 100644
 --- a/src/webui/webapplication.cpp
 +++ b/src/webui/webapplication.cpp
-@@ -379,6 +379,9 @@ void WebApplication::doProcessRequest()
-             print(result.data.toString(), Http::CONTENT_TYPE_TXT);
-             break;
+@@ -405,6 +405,9 @@ void WebApplication::doProcessRequest(const bool isUsingApiKey)
+                 break;
+             }
          }
 +        if (!result.headers.isEmpty())
 +            for (const auto [key, value] : result.headers.asKeyValueRange())
@@ -139,10 +140,10 @@ index 74f582f4a..bc249a99c 100644
      catch (const APIError &error)
      {
 diff --git a/src/webui/www/private/index.html b/src/webui/www/private/index.html
-index f201d0efb..1e8a7bdee 100644
+index 976ff6c33..b3df01b04 100644
 --- a/src/webui/www/private/index.html
 +++ b/src/webui/www/private/index.html
-@@ -260,6 +260,7 @@
+@@ -278,6 +278,7 @@
      </ul>
      <ul id="torrentFilesMenu" class="contextMenu">
          <li><a href="#Rename"><img src="images/edit-rename.svg" alt="QBT_TR(Rename...)QBT_TR[CONTEXT=PropertiesWidget]"> QBT_TR(Rename...)QBT_TR[CONTEXT=PropertiesWidget]</a></li>
@@ -151,24 +152,17 @@ index f201d0efb..1e8a7bdee 100644
              <a href="#FilePrio" class="arrow-right"><span style="display: inline-block; width: 16px;"></span> QBT_TR(Priority)QBT_TR[CONTEXT=PropertiesWidget]</a>
              <ul>
 diff --git a/src/webui/www/private/scripts/prop-files.js b/src/webui/www/private/scripts/prop-files.js
-index 39c9db083..609c9448d 100644
+index 5f07eeffc..cf27bdc58 100644
 --- a/src/webui/www/private/scripts/prop-files.js
 +++ b/src/webui/www/private/scripts/prop-files.js
-@@ -574,6 +574,26 @@ window.qBittorrent.PropFiles ??= (() => {
-         });
+@@ -173,7 +173,27 @@ window.qBittorrent.PropFiles ??= (() => {
+             multiFileRename(current_hash, selectedRows);
      };
  
-+    const singleContentFileDownload = (hash) => {
-+        const rowId = torrentFilesTable.selectedRowsIds()[0];
-+        if (rowId === undefined)
-+            return;
-+        const row = torrentFilesTable.rows.get(rowId);
-+        if (!row)
-+            return;
-+
-+        const node = torrentFilesTable.getNode(rowId);
+-    const torrentFilesTable = window.qBittorrent.TorrentContent.init("torrentFilesTableDiv", window.qBittorrent.DynamicTable.TorrentFilesTable, onFilePriorityChanged, onFileRenameHandler);
++    const singleContentFileDownload = (hash, node) => {
 +        const path = node.path;
-+
++        
 +        const url = new URL("api/v2/torrents/downloadContentFile", window.location);
 +        url.search = new URLSearchParams({ hash, path });
 +        const link = document.createElement("a");
@@ -178,29 +172,49 @@ index 39c9db083..609c9448d 100644
 +        link.remove();
 +    };
 +
-     const torrentFilesContextMenu = new window.qBittorrent.ContextMenu.ContextMenu({
-         targets: "#torrentFilesTableDiv tbody tr",
-         menu: "torrentFilesMenu",
-@@ -588,6 +608,14 @@ window.qBittorrent.PropFiles ??= (() => {
-                 else
-                     singleFileRename(hash);
-             },
-+            DownloadContentFile: (element, ref) => {
-+                const hash = torrentsTable.getCurrentTorrentID();
-+                if (!hash)
-+                    return;
++    const onContentFileDownloadHandler = (selectedNodes) => {
++        for (const node of selectedNodes) {
++            if (!node.isFolder) {
++                singleContentFileDownload(current_hash, node);
++            }
++        }
++    };
 +
-+                if (torrentFilesTable.selectedRowsIds().length == 1)
-+                    singleContentFileDownload(hash);
-+            },
++    const torrentFilesTable = window.qBittorrent.TorrentContent.init("torrentFilesTableDiv", window.qBittorrent.DynamicTable.TorrentFilesTable, onFilePriorityChanged, onFileRenameHandler, onContentFileDownloadHandler);
  
-             FilePrioIgnore: (element, ref) => {
-                 filesPriorityMenuClicked(FilePriority.Ignored);
+     const clear = () => {
+         torrentFilesTable.clear();
+diff --git a/src/webui/www/private/scripts/torrent-content.js b/src/webui/www/private/scripts/torrent-content.js
+index de339efe8..ec89f94f3 100644
+--- a/src/webui/www/private/scripts/torrent-content.js
++++ b/src/webui/www/private/scripts/torrent-content.js
+@@ -466,7 +466,7 @@ window.qBittorrent.TorrentContent ??= (() => {
+         }
+     };
+ 
+-    const init = (tableId, tableClass, onFilePriorityChangedHandler = undefined, onFileRenameHandler = undefined) => {
++    const init = (tableId, tableClass, onFilePriorityChangedHandler = undefined, onFileRenameHandler = undefined, onContentFileDownloadHandler = undefined) => {
+         if (onFilePriorityChangedHandler !== undefined)
+             onFilePriorityChanged = onFilePriorityChangedHandler;
+ 
+@@ -482,6 +482,12 @@ window.qBittorrent.TorrentContent ??= (() => {
+                         onFileRenameHandler(torrentFilesTable.selectedRows, nodes);
+                     }
+                 },
++                DownloadContentFile: (element, ref) => {
++                    if (onContentFileDownloadHandler !== undefined) {
++                        const nodes = torrentFilesTable.selectedRowsIds().map(row => torrentFilesTable.getNode(row));
++                        onContentFileDownloadHandler(nodes);
++                    }
++                },
+ 
+                 FilePrioIgnore: (element, ref) => {
+                     filesPriorityMenuClicked(FilePriority.Ignored);
 diff --git a/src/webui/www/translations/webui_zh_CN.ts b/src/webui/www/translations/webui_zh_CN.ts
-index 60a8feac7..ba14306fa 100644
+index 56ed0f7bc..5e890c142 100644
 --- a/src/webui/www/translations/webui_zh_CN.ts
 +++ b/src/webui/www/translations/webui_zh_CN.ts
-@@ -2327,6 +2327,10 @@ Use ';' to split multiple entries. Can use wildcard '*'.</source>
+@@ -2538,6 +2538,10 @@ Use ';' to split multiple entries. Can use wildcard '*'.</source>
          <source>Rename...</source>
          <translation>重命名...</translation>
      </message>
@@ -212,5 +226,5 @@ index 60a8feac7..ba14306fa 100644
          <source>%1 (seeded for %2)</source>
          <translation>%1 (已做种 %2)</translation>
 -- 
-2.52.0
+2.54.0
 

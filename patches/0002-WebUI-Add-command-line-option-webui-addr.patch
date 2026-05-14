@@ -1,6 +1,6 @@
-From 896d8ef38ac842291d611ac1c724fca2d31eea8b Mon Sep 17 00:00:00 2001
+From 88ef784668c3e538e8be12ffada9938e2f7c8134 Mon Sep 17 00:00:00 2001
 From: whoisnian <zhuchangbao1998@gmail.com>
-Date: Thu, 14 Aug 2025 03:16:57 +0800
+Date: Fri, 15 May 2026 01:28:42 +0800
 Subject: [PATCH 2/2] WebUI: Add command line option --webui-addr
 
 ---
@@ -10,10 +10,10 @@ Subject: [PATCH 2/2] WebUI: Add command line option --webui-addr
  3 files changed, 16 insertions(+)
 
 diff --git a/src/app/application.cpp b/src/app/application.cpp
-index cfb0dbd18..ec4b1c248 100644
+index 62da9eb24..9bef1ea5c 100644
 --- a/src/app/application.cpp
 +++ b/src/app/application.cpp
-@@ -328,6 +328,9 @@ Application::Application(int &argc, char **argv)
+@@ -333,6 +333,9 @@ Application::Application(int &argc, char **argv)
      if (isFileLoggerEnabled())
          m_fileLogger = new FileLogger(fileLoggerPath(), isFileLoggerBackup(), fileLoggerMaxSize(), isFileLoggerDeleteOld(), fileLoggerAge(), static_cast<FileLogger::FileLogAgeType>(fileLoggerAgeType()));
  
@@ -24,7 +24,7 @@ index cfb0dbd18..ec4b1c248 100644
          Preferences::instance()->setWebUIPort(m_commandLineArgs.webUIPort);
  
 diff --git a/src/app/cmdoptions.cpp b/src/app/cmdoptions.cpp
-index c4159329b..c2fb11a85 100644
+index cb4ce6c01..83e990e0a 100644
 --- a/src/app/cmdoptions.cpp
 +++ b/src/app/cmdoptions.cpp
 @@ -316,6 +316,7 @@ namespace
@@ -80,5 +80,5 @@ index c4b42053f..ed0681e64 100644
      int torrentingPort = -1;
      std::optional<bool> skipDialog;
 -- 
-2.52.0
+2.54.0
 
