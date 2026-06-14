@@ -1,10 +1,10 @@
-From 62917dd54e3a0b1f0de3a37ffdfb4a5a23d0e320 Mon Sep 17 00:00:00 2001
+From 7721cbadcd9e40409382e37ae97596708edc7f0e Mon Sep 17 00:00:00 2001
 From: whoisnian <zhuchangbao1998@gmail.com>
 Date: Fri, 15 May 2026 01:28:13 +0800
 Subject: [PATCH 1/2] WebUI: Add button to download content file
 
 ---
- src/webui/api/apicontroller.cpp               |  6 +++
+ src/webui/api/apicontroller.cpp               |  5 +++
  src/webui/api/apicontroller.h                 |  3 ++
  src/webui/api/torrentscontroller.cpp          | 38 +++++++++++++++++++
  src/webui/api/torrentscontroller.h            |  1 +
@@ -13,21 +13,13 @@ Subject: [PATCH 1/2] WebUI: Add button to download content file
  src/webui/www/private/scripts/prop-files.js   | 22 ++++++++++-
  .../www/private/scripts/torrent-content.js    |  8 +++-
  src/webui/www/translations/webui_zh_CN.ts     |  4 ++
- 9 files changed, 84 insertions(+), 2 deletions(-)
+ 9 files changed, 83 insertions(+), 2 deletions(-)
 
 diff --git a/src/webui/api/apicontroller.cpp b/src/webui/api/apicontroller.cpp
-index c3382f705..1fc53cd0c 100644
+index ced5e9263..5ec7973af 100644
 --- a/src/webui/api/apicontroller.cpp
 +++ b/src/webui/api/apicontroller.cpp
-@@ -43,6 +43,7 @@ void APIResult::clear()
-     data.clear();
-     mimeType.clear();
-     filename.clear();
-+    headers.clear();
-     status = APIStatus::Ok;
- }
- 
-@@ -115,3 +116,8 @@ void APIController::setStatus(const APIStatus status)
+@@ -112,3 +112,8 @@ void APIController::setStatus(const APIStatus status)
  {
      m_result.status = status;
  }
@@ -37,7 +29,7 @@ index c3382f705..1fc53cd0c 100644
 +    m_result.headers[name] = value;
 +}
 diff --git a/src/webui/api/apicontroller.h b/src/webui/api/apicontroller.h
-index 898ad3fdc..8ae20dc4e 100644
+index e5dfe561a..7c96b2d2d 100644
 --- a/src/webui/api/apicontroller.h
 +++ b/src/webui/api/apicontroller.h
 @@ -44,6 +44,7 @@ struct APIResult
@@ -46,9 +38,9 @@ index 898ad3fdc..8ae20dc4e 100644
      QString filename;
 +    QMap<QString, QString> headers;
      APIStatus status = APIStatus::Ok;
+ };
  
-     void clear();
-@@ -69,6 +70,8 @@ protected:
+@@ -67,6 +68,8 @@ protected:
      void setResult(const QJsonObject &result);
      void setResult(const QByteArray &result, const QString &mimeType = {}, const QString &filename = {});
  
@@ -58,7 +50,7 @@ index 898ad3fdc..8ae20dc4e 100644
  
  private:
 diff --git a/src/webui/api/torrentscontroller.cpp b/src/webui/api/torrentscontroller.cpp
-index 5a529eb66..970ceaace 100644
+index 752053b43..3d5b65323 100644
 --- a/src/webui/api/torrentscontroller.cpp
 +++ b/src/webui/api/torrentscontroller.cpp
 @@ -57,6 +57,7 @@
@@ -211,10 +203,10 @@ index de339efe8..ec89f94f3 100644
                  FilePrioIgnore: (element, ref) => {
                      filesPriorityMenuClicked(FilePriority.Ignored);
 diff --git a/src/webui/www/translations/webui_zh_CN.ts b/src/webui/www/translations/webui_zh_CN.ts
-index 56ed0f7bc..5e890c142 100644
+index f989ed6c7..513aba1e0 100644
 --- a/src/webui/www/translations/webui_zh_CN.ts
 +++ b/src/webui/www/translations/webui_zh_CN.ts
-@@ -2538,6 +2538,10 @@ Use ';' to split multiple entries. Can use wildcard '*'.</source>
+@@ -2526,6 +2526,10 @@ Use ';' to split multiple entries. Can use wildcard '*'.</source>
          <source>Rename...</source>
          <translation>重命名...</translation>
      </message>

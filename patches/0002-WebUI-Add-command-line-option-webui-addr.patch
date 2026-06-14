@@ -1,4 +1,4 @@
-From 88ef784668c3e538e8be12ffada9938e2f7c8134 Mon Sep 17 00:00:00 2001
+From 06a4fc96d356227b331abdee0fa4523fef56a93a Mon Sep 17 00:00:00 2001
 From: whoisnian <zhuchangbao1998@gmail.com>
 Date: Fri, 15 May 2026 01:28:42 +0800
 Subject: [PATCH 2/2] WebUI: Add command line option --webui-addr
