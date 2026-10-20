@@ -4,6 +4,9 @@
 
 Download torrent content file from qBittorrent WebUI via Nginx X-Accel-Redirect.
 
+> [!WARNING]
+> **This project is no longer needed.** Since [qBittorrent v5.3.0](https://github.com/qbittorrent/qBittorrent/releases/tag/release-5.3.0), completed files can be downloaded from WebUI natively ([PR #24135](https://github.com/qbittorrent/qBittorrent/pull/24135)), via the "Download" item in the context menu of Content panel.  
+
 ## How it works
 This repo applies two patches to the qBittorrent source code:
 1. **Add a "Download" button to the WebUI:** This patch adds a new API endpoint that, when called, returns an `X-Accel-Redirect` header containing the path to the requested file.
